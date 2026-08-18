@@ -56,6 +56,52 @@ describe('fetchJson', () => {
     });
   });
 
+  it('should reject malformed JSON responses', async () => {
+    getMock.mockImplementationOnce((_url, _options, callback) => {
+      const res = new EventEmitter() as IncomingMessage;
+      res.statusCode = 200;
+      (callback as (res: IncomingMessage) => void)(res);
+      res.emit('data', Buffer.from('{invalid'));
+      res.emit('end');
+      return new EventEmitter() as ClientRequest;
+    });
+
+    await expect(
+      fetchJson('https://example.com/malformed.json'),
+    ).rejects.toThrow(
+      'Failed to parse JSON response from https://example.com/malformed.json',
+    );
+  });
+
+  it('should reject on response stream error', async () => {
+    const error = new Error('Connection reset');
+    getMock.mockImplementationOnce((_url, _options, callback) => {
+      const res = new EventEmitter() as IncomingMessage;
+      res.statusCode = 200;
+      (callback as (res: IncomingMessage) => void)(res);
+      res.emit('error', error);
+      return new EventEmitter() as ClientRequest;
+    });
+
+    await expect(fetchJson('https://example.com/data.json')).rejects.toThrow(
+      'Failed to read response from https://example.com/data.json: Connection reset',
+    );
+  });
+
+  it('should reject on aborted response', async () => {
+    getMock.mockImplementationOnce((_url, _options, callback) => {
+      const res = new EventEmitter() as IncomingMessage;
+      res.statusCode = 200;
+      (callback as (res: IncomingMessage) => void)(res);
+      res.emit('aborted');
+      return new EventEmitter() as ClientRequest;
+    });
+
+    await expect(fetchJson('https://example.com/data.json')).rejects.toThrow(
+      'Response aborted while fetching https://example.com/data.json',
+    );
+  });
+
   it('should handle redirects (301 and 302)', async () => {
     // Test 302
     getMock.mockImplementationOnce((_url, _options, callback) => {
