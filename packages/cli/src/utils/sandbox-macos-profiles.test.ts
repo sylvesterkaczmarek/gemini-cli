@@ -46,6 +46,10 @@ describe('macOS permissive Seatbelt profiles', () => {
       expect(rules).not.toContain('(allow default)');
     });
 
+    it('allows process metadata queries needed by git and child processes', () => {
+      expect(rules).toContain('(allow process-info*)');
+    });
+
     it('does not permit filesystem (un)mounts', () => {
       expect(rules).not.toMatch(/file-mount/);
       expect(rules).not.toMatch(/file-unmount/);
