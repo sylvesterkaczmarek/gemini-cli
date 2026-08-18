@@ -12,9 +12,11 @@
 ;; allow reading files from anywhere on host
 (allow file-read*)
 
-;; allow exec/fork (children inherit this policy, so they stay sandboxed)
+;; allow exec/fork and process metadata queries used by git and child-process
+;; bookkeeping (mirrors the core deny-default macOS base profile)
 (allow process-exec)
 (allow process-fork)
+(allow process-info*)
 
 ;; allow signals to self, e.g. SIGPIPE on write to closed pipe
 (allow signal (target self))
