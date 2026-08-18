@@ -24,6 +24,15 @@ export async function fetchJson<T>(
   return new Promise((resolve, reject) => {
     https
       .get(url, { headers }, (res) => {
+        res.on('error', (error: Error) => {
+          reject(
+            new Error(`Failed to read response from ${url}: ${error.message}`),
+          );
+        });
+        res.on('aborted', () => {
+          reject(new Error(`Response aborted while fetching ${url}`));
+        });
+
         if (res.statusCode === 302 || res.statusCode === 301) {
           if (redirectCount >= 10) {
             return reject(new Error('Too many redirects'));
@@ -49,8 +58,15 @@ export async function fetchJson<T>(
         res.on('data', (chunk) => chunks.push(chunk));
         res.on('end', () => {
           const data = Buffer.concat(chunks).toString();
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-          resolve(JSON.parse(data) as T);
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            resolve(JSON.parse(data) as T);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            reject(
+              new Error(`Failed to parse JSON response from ${url}: ${message}`),
+            );
+          }
         });
       })
       .on('error', reject);
