@@ -52,12 +52,15 @@ async function getMemoryNodeArgs(): Promise<string[]> {
   try {
     const { readFileSync } = await import('node:fs');
     const { join } = await import('node:path');
+    const { parseBootstrapSettings } = await import(
+      './src/utils/bootstrapSettings.js'
+    );
     // Respect GEMINI_CLI_HOME environment variable, falling back to os.homedir()
     const baseDir =
       process.env['GEMINI_CLI_HOME'] || join(os.homedir(), '.gemini');
     const settingsPath = join(baseDir, 'settings.json');
     const rawSettings = readFileSync(settingsPath, 'utf8');
-    const settings = JSON.parse(rawSettings);
+    const settings = parseBootstrapSettings(rawSettings);
     if (settings?.advanced?.autoConfigureMemory === false) {
       autoConfigureMemory = false;
     }
